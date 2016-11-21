@@ -1,0 +1,16 @@
+# needs selinux disabled
+- name: install libselinux-python
+  yum: name=libselinux-python
+ 
+- name: selinux disabled
+  selinux: state=disabled
+
+#- name: upgrade all packages
+#  yum: name=* state=latest
+
+- name: install necessary pkgs
+  yum: pkg={{ item }} update_cache=yes
+  with_items:
+    - make
+    - git
+    - dstat

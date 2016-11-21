@@ -1,0 +1,22 @@
+- name: check erlang installed
+  command: ls /usr/lib64/erlang
+  ignore_errors: True
+  register: erlang_installation_flag
+  changed_when: False
+
+- name: get elrang repository rpm
+  get_url:     
+    url: https://packages.erlang-solutions.com/erlang-solutions-1.0-1.noarch.rpm
+    dest: /tmp/erlang-solutions-1.0-1.noarch.rpm
+
+- name: add repository enrty
+  command: >
+    rpm -Uvh erlang-solutions-1.0-1.noarch.rpm
+    chdir=/tmp/
+  when: erlang_installation_flag|failed
+  
+- name: install erlang
+  yum: name=erlang
+
+#- name: install rabbit-mq
+  

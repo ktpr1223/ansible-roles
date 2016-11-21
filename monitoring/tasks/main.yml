@@ -1,0 +1,55 @@
+# java
+- name: check java installed
+  command: which java
+  ignore_errors: True
+  changed_when: False
+  register: java_installation_flag
+  
+- name: install java-1.8.0-openjdk-devel
+  yum: >
+    name=java-1.8.0-openjdk-devel
+    state=present
+  when: java_installation_flag|failed  
+
+# elasticsearch
+# cf. https://www.elastic.co/guide/en/elasticsearch/reference/current/setup-repositories#.html#_yum
+
+- name: download elasticsearch rpm
+  command: rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+  ignore_errors: True
+  changed_when: False
+
+- name: create elasticsearch.repo file
+  template: src=elasticsearch.repo.j2 dest=/etc/yum.repos.d/elasticsearch.repo owner=root group=root mode=0644
+
+- name: yum install elasticsearch
+  yum: name=elasticsearch
+  notify: restart elasticsearch
+
+- name: reload systemd
+  command: /usr/bin/systemctl daemon-reload
+  changed_when: False
+
+- name: enable elasticsearch
+  service: name=elasticsearch enabled=yes
+
+# kibana
+# cf. https://www.elastic.co/guide/en/kibana/4.6/setup-repositories.html
+- name: create kibana.repo file
+  template: src=kibana.repo.j2 dest=/etc/yum.repos.d/kibana.repo owner=root group=root mode=0644
+
+- name: yum install kibana
+  yum: name=kibana
+  notify: restart kibana
+
+- name: reload systemd
+  command: /usr/bin/systemctl daemon-reload
+  changed_when: False
+
+- name: install sense
+  command: /opt/kibana/bin/kibana plugin --install elastic/sense
+  changed_when: False
+  when: 
+
+- name: enable kibana
+  service: name=kibana enabled=yes

@@ -1,0 +1,37 @@
+# sandbox.log -> stdout
+<source>
+  @type tail
+  path /vagrant/code/sandbox/log/app.log
+  pos_file /var/log/td-agent/app.log.pos
+  format /\[(?<level>\w+)\] \[(?<logger>\w+)\] *(?<message>.*)$/
+  time_format %Y-%m-%dT %H:%M:%S
+  tag log.sandbox
+</source>
+ 
+<match log.sandbox>
+  @type stdout
+</match>
+
+# sandbox.log -> mysql/stdout
+#<match log.sandbox>
+#  @type copy
+#  <store>
+#    @type stdout
+#  </store>
+
+#  <store>
+#    @type mysql_bulk
+#    host 192.168.33.11
+#    port 3306
+#    database sample
+#    username root
+#    password Pero2510!
+#    column_names id,log_level,logger,message,created_at
+#    key_names id,level,logger,message,${time}
+#    table sandbox_log
+#    flush_interval 10s
+#  </store>
+#</match>
+
+
+# performance -> Elasticsearch

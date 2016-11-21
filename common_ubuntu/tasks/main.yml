@@ -1,0 +1,27 @@
+- name: install basic apt packages
+  apt: pkg={{ item }} update_cache=yes cache_valid_time=3600
+  with_items:
+    - git
+    - python-pip
+    - python-dev
+    - python-virtualenv
+    - build-essential
+    - ruby-full
+    - curl
+  changed_when: false
+
+- name: check fluentd installed
+  command: ls -l /etc/init.d/td-agent
+  ignore_errors: True
+  changed_when: False
+  register: check_fluentd_installed
+
+- name: install fluentd
+  shell: curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-xenial-td-agent2.sh | sh
+  when: check_fluentd_installed|failed
+  changed_when: false
+
+# TODO(kimoto): Is this OK??  
+- name: start fluentd
+  shell: /etc/init.d/td-agent restart
+  when: check_fluentd_installed|failed

@@ -1,0 +1,63 @@
+- name: install ruby
+  yum: pkg=ruby
+
+- name: check fluentd installed
+  command: ls -l /etc/init.d/td-agent
+  ignore_errors: True
+  changed_when: False
+  register: fluentd_installation_flag
+
+- name: install fluentd
+  #shell: curl -L https://toolbelt.treasuredata.com/sh/install-ubuntu-xenial-td-agent2.sh  #| sh
+  shell: curl -L https://toolbelt.treasuredata.com/sh/install-redhat-td-agent2.sh | sh
+  when: fluentd_installation_flag|failed
+  changed_when: false
+
+- name: start fluentd
+  shell: /etc/init.d/td-agent restart
+  when: fluentd_installation_flag|failed
+
+## fluentd set up
+
+- name: replace td-agent.conf
+  template: src=td-agent.conf.j2 dest=/etc/td-agent/td-agent.conf owner=root group=root mode=0644
+  notify: restart td-agent service
+
+- name: change td-agent-user root
+  replace: >
+    dest=/etc/init.d/td-agent
+    regexp='TD_AGENT_USER=td-agent'
+    replace='TD_AGENT_USER=root'
+  notify: restart td-agent service
+
+- name: change td-agent-group root
+  replace: >
+    dest=/etc/init.d/td-agent
+    regexp='TD_AGENT_GROUP=td-agent'
+    replace='TD_AGENT_GROUP=root'
+  notify: restart td-agent service
+
+## fluentd plugin install
+## cf. https://github.com/uzresk/ansible-efk/blob/master/roles/td-agent/tasks/td-agent.yml
+## TODO(kimoto): rewrite this
+#- name: check plugins
+#  command: td-agent-gem list --local {{ item.name }}
+#  with_items: "{{ plugins }}"
+#  changed_when: False
+#  failed_when: False
+#  register: plugin_status
+
+#- name: install plugins
+#  command: /usr/sbin/td-agent-gem install {{ item.item.name }}
+#  with_items: plugin_status.results
+#  when: plugin_status.results is defined and item.stdout[0] is undefined
+#  notify: restart td-agent service
+
+- name: install plugins
+  command: /usr/sbin/td-agent-gem install {{ item }}
+  with_items: 
+    - fluent-plugin-mysql # need mysql-client
+    - fluent-plugin-dstat
+    - fluent-plugin-elasticsearch
+  notify: restart td-agent service
+  when: fluentd_installation_flag|failed

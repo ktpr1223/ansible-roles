@@ -1,0 +1,4 @@
+plugins:
+  - fluent-plugin-mysql
+  - fluent-plugin-dstat
+  - fluent-plugin-elasticsearch

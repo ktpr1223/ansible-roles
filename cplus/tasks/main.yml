@@ -1,0 +1,144 @@
+- name: install c_cplus yum packages
+  yum: name={{ item }} 
+  with_items:
+    #- cmake
+    - mysql-devel
+    - boost
+    - boost-devel
+    - gdb
+    - valgrind
+    - autoconf
+    - automake
+    - libtool
+    - curl
+    - unzip
+
+# TODO(kimoto): check latest cmake installation
+- name: install cmake
+  get_url: 
+    url: https://cmake.org/files/v3.5/cmake-3.5.2.tar.gz 
+    dest: /tmp/cmake-3.5.2.tar.gz 
+    validate_certs: False
+
+- name: unarchive cmake.tar.gz
+  unarchive: 
+    src: /tmp/cmake-3.5.2.tar.gz 
+    copy: no 
+    dest: /tmp/
+
+# cf. http://stackoverflow.com/questions/18615451/cmake-missing-modules-directory
+# TODO(kimto): command ???
+- name: install cmake
+  command : > 
+    {{ item }} 
+    chdir=/tmp/cmake-3.5.2
+  with_items:
+    - ./bootstrap --prefix=/usr
+    - make
+    - make install
+  changed_when: False
+
+
+- name: check spdlog installed
+  command: ls -l /usr/local/include/spdlog
+  ignore_errors: True
+  register: spdlog_installation_flag
+  changed_when: False
+
+- name: git clone spdlog
+  git: repo=https://github.com/gabime/spdlog.git dest=/tmp/spdlog
+  when: spdlog_installation_flag|failed
+
+- name: install spdlog
+  command: cp -r /tmp/spdlog/include/spdlog /usr/local/include
+  when: spdlog_installation_flag|failed
+
+- name: check mysql-connector-c++ installed
+  command: ls -l /usr/local/include/cppconn/
+  ignore_errors: True
+  register: mysql_connector_installation_flag
+  changed_when: False
+
+- name: download mysql-connector-c++ tar file
+  get_url: 
+    url: http://dev.mysql.com/get/Downloads/Connector-C++/mysql-connector-c++-1.1.6.tar.gz
+    dest: /tmp/mysql-connector-c++-1.1.6.tar.gz
+  when: mysql_connector_installation_flag|failed
+  
+- name: unarchive mysql-connector-c++-source
+  command: tar zxvf /tmp/mysql-connector-c++-1.1.6.tar.gz chdir=/tmp
+  when: mysql_connector_installation_flag|failed
+
+- name: install mysql-connector-c++
+  command : > 
+    {{ item }} 
+    chdir=/tmp/mysql-connector-c++-1.1.6
+  with_items:
+    - cmake .
+    - make
+    - make install
+  when: mysql_connector_installation_flag|failed
+
+- name: check hiredis installed
+  command: ls -l /usr/local/include/hiredis/
+  ignore_errors: True
+  register: hiredis_installation_flag
+  changed_when: False
+  
+- name: git clone hiredis
+  git: repo=https://github.com/redis/hiredis.git dest=/tmp/hiredis
+  when: hiredis_installation_flag|failed
+
+- name: install hiredis
+  command : > 
+    {{ item }} 
+    chdir=/tmp/hiredis
+  with_items:
+    - make
+    - make install
+  when: hiredis_installation_flag|failed
+
+# proto
+- name: check protocol buffers installed
+  command: ls -l /usr/local/lib/libprotobuf.so
+  ignore_errors: True
+  register: protocol_buffers_installation_flag
+  changed_when: False
+
+- name: git clone protocol buffers
+  git: repo=https://github.com/google/protobuf.git dest=/tmp/protobuf
+  when: protocol_buffers_installation_flag|failed
+
+- name: install protocol buffers
+  command : > 
+    {{ item }} 
+    chdir=/tmp/protobuf
+  with_items:
+    - ./autogen.sh
+    - ./configure
+    - make
+    - make check
+    - make install
+    - ldconfig
+  when: protocol_buffers_installation_flag|failed
+
+- name: check json11 installed
+  command: ls /usr/local/include/json11.hpp
+  ignore_errors: True
+  register: json11_installation_flag
+  changed_when: False
+  
+- name: git clone json11
+  git: repo=https://github.com/dropbox/json11.git dest=/tmp/json11  
+  when: json11_installation_flag|failed
+    
+- name: install json11
+  command : > 
+    {{ item }} 
+    chdir=/tmp/json11
+  with_items:
+    - cmake .
+    - make
+    - make install
+  when: json11_installation_flag|failed
+

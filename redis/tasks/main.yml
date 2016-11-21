@@ -1,0 +1,60 @@
+- name: check redis installed
+  command: ls -l /etc/redis.conf
+  ignore_errors: True
+  changed_when: False
+  register: redis_installation_flag
+
+- name: redis source download
+  get_url: >
+    url=http://download.redis.io/releases/redis-3.2.3.tar.gz
+    dest=/tmp/redis-3.2.3.tar.gz
+
+- name: redis unarchive
+  command: >
+    tar zxvf redis-3.2.3.tar.gz
+    chdir=/tmp/
+  when: redis_installation_flag|failed
+
+- name: make
+  command: >
+    make
+    chdir=/tmp/redis-3.2.3
+  when: redis_installation_flag|failed
+
+- name: make install
+  command: >
+    make install
+    chdir=/tmp/redis-3.2.3
+  when: redis_installation_flag|failed
+
+- name: deamonize on
+  replace: >
+    dest=/tmp/redis-3.2.3/redis.conf
+    regexp='daemonize no'
+    replace='daemonize yes'
+
+- name: permit remote access 
+  replace: >
+    dest=/tmp/redis-3.2.3/redis.conf
+    regexp='bind 127.0.0.1'
+    replace='#bind 127.0.0.1' 
+  when: redis_installation_flag|failed
+
+# this is for practice.
+- name: disable protect mode
+  replace: >
+    dest=/tmp/redis-3.2.3/redis.conf
+    regexp='protected-mode yes'
+    replace='protected-mode no'
+
+- name: redis.conf copy
+  shell: creates=/etc/redis.conf cp /tmp/redis-3.2.3/redis.conf /etc/redis.conf
+  when: redis_installation_flag|failed
+
+- name: redis start
+  command: redis-server /etc/redis.conf
+  become: no
+  # why no?
+  when: redis_installation_flag|failed
+
+# TODO(kimoto): add check redis-process active or not -> notify redis restart

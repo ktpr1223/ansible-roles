@@ -1,0 +1,40 @@
+# python2
+# need sqlite3 before python3 installation
+- name: install necessary pkgs
+  yum: pkg={{ item }} update_cache=yes
+  with_items:
+    - python-pip
+    - python-virtualenv
+    - sqlite-devel 
+
+# python3
+# cf. http://docs.python.jp/3/using/unix.html
+# which python3 -> dame datta why??
+- name: check python3 installed
+  command: ls /usr/local/bin/python3
+  ignore_errors: True
+  changed_when: False
+  register: python3_installation_flag
+
+- name: get python3 source
+  get_url: 
+    url: https://www.python.org/ftp/python/3.5.2/Python-3.5.2.tgz 
+    dest: /tmp/Python-3.5.2.tgz
+  when: python3_installation_flag|failed
+
+- name: unarchive python3 source
+  unarchive: 
+    src: /tmp/Python-3.5.2.tgz
+    copy: no 
+    dest: /tmp/
+  when: python3_installation_flag|failed
+  
+- name: install python 3
+  command : > 
+    {{ item }} 
+    chdir=/tmp/Python-3.5.2
+  with_items:
+    - ./configure
+    - make
+    - make install
+  when: python3_installation_flag|failed
